@@ -12,7 +12,6 @@ load_dotenv()
 ENV = os.environ.get("ENV", "dev")
 S3_BUCKET_TEMPORARY = os.environ.get("S3_BUCKET_TEMPORARY")
 
-
 def init_s3_bucket(env, bucket):
     if env == "production":
         s3_client = boto3.client('s3')
@@ -31,11 +30,6 @@ def init_s3_bucket(env, bucket):
 
 
 s3, S3_REGION = init_s3_bucket(bucket=S3_BUCKET_TEMPORARY, env=ENV)
-
-
-def load_model(path, generator, device):
-    generator.load_state_dict(torch.hub.load_state_dict_from_url(path, map_location=torch.device(device)))
-    return generator
 
 
 def transform():

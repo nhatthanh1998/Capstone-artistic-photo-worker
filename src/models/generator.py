@@ -1,93 +1,27 @@
 from torch import nn as nn
 
-class ResnetBlock(nn.Module):
-    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
-        super(ResnetBlock, self).__init__()
-        self.conv_block = self.build_conv_block(dim, padding_type, norm_layer, use_dropout, use_bias)
-
-    def build_conv_block(self, dim, padding_type, norm_layer, use_dropout, use_bias):
-        conv_block = []
-        if padding_type == 'reflect':
-            conv_block += [nn.ReflectionPad2d(1)]
-        else:
-            conv_block += [nn.ReplicationPad2d(1)]
-
-        conv_block += [nn.Conv2d(dim, dim, kernel_size=3, bias=use_bias), nn.InstanceNorm2d(dim), nn.ReLU(True)]
-        
-        if use_dropout:
-            conv_block += [nn.Dropout(0.5)]
-            
-        if padding_type == 'reflect':
-            conv_block += [nn.ReflectionPad2d(1)]
-        else:
-            conv_block += [nn.ReplicationPad2d(1)]
-            
-        conv_block += [nn.Conv2d(dim, dim, kernel_size=3, bias=use_bias), nn.InstanceNorm2d(dim)]
-        return nn.Sequential(*conv_block)
-
-    def forward(self, x):
-        out = x + self.conv_block(x)
-        return out
-
-class Generator2(nn.Module):
-    def __init__(self, use_dropout=False, num_residual_block=6):
-        super(Generator2, self).__init__()
-        model = [
-            nn.ReflectionPad2d(3),
-            nn.Conv2d(3, 32, kernel_size=7, padding=0, stride=1, bias=True),
-            nn.InstanceNorm2d(32),
-            nn.ReLU(True),
-            nn.Conv2d(32, 64, kernel_size=4, padding=1, stride=2, bias=True),
-            nn.InstanceNorm2d(64),
-            nn.ReLU(True),
-            nn.Conv2d(64, 128, kernel_size=4, padding=1, stride=2, bias=True),
-            nn.InstanceNorm2d(128),
-            nn.ReLU(True),
-        ]
-        for i in range(num_residual_block):
-            model += [ResnetBlock(128, padding_type='reflect', norm_layer=nn.InstanceNorm2d, use_dropout=use_dropout, use_bias=True)]
-        
-        model += [
-            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, bias=True),
-            nn.InstanceNorm2d(64),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1, bias=True),
-            nn.InstanceNorm2d(32),
-            nn.ReLU(True),
-        ]
-        
-        model += [nn.ReflectionPad2d(3)]
-        model += [nn.Conv2d(32, 3, kernel_size=7, padding=0)]
-        model += [nn.Tanh()]
-        
-        self.model = nn.Sequential(*model)
-    def forward(self, x):
-        return self.model(x)
-
-
 class Generator(nn.Module):
-    def __init__(self, alpha=1.0):
+    def __init__(self):
         super(Generator, self).__init__()
-        a = alpha
         self.ConvBlock = nn.Sequential(
-            ConvLayer(3, int(a*32), 9, 1),
+            ConvLayer(3, 32, 9, 1),
             nn.ReLU(),
-            ConvLayer(int(a*32), int(a*32), 3, 2),
+            ConvLayer(32, 32, 3, 2),
             nn.ReLU(),
-            ConvLayer(int(a*32), int(a*32), 3, 2),
+            ConvLayer(32, 32, 3, 2),
             nn.ReLU()
         )
         self.ResidualBlock = nn.Sequential(
-            ResNextLayer(int(a*32), [int(a*16), int(a*16), int(a*32)], kernel_size=3),
-            ResNextLayer(int(a*32), [int(a*16), int(a*16), int(a*32)], kernel_size=3),
-            ResNextLayer(int(a*32), [int(a*16), int(a*16), int(a*32)], kernel_size=3),
+            ResNextLayer(32, [16, 16, 32], kernel_size=3),
+            ResNextLayer(32, [16, 16, 32], kernel_size=3),
+            ResNextLayer(32, [16, 16, 32], kernel_size=3),
         )
         self.DeconvBlock = nn.Sequential(
-            DeconvLayer(int(a*32), int(a*32), 3, 2, 1),
+            DeconvLayer(32, 32, 3, 2, 1),
             nn.ReLU(),
-            DeconvLayer(int(a*32), int(a*32), 3, 2, 1),
+            DeconvLayer(32, 32, 3, 2, 1),
             nn.ReLU(),
-            ConvLayer(int(a*32), 3, 9, 1, norm="None"),
+            ConvLayer(32, 3, 9, 1, norm="None"),
             nn.Tanh()
         )
 
@@ -123,9 +57,6 @@ class ConvLayer(nn.Module):
         else:
             out = self.norm_layer(x)
         return out
-
-
-
 
 class DeconvLayer(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, output_padding, norm="instance"):
