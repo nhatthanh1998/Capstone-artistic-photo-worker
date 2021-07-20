@@ -10,7 +10,7 @@ from PIL import Image
 
 load_dotenv()
 ENV = os.environ.get("ENV", "dev")
-S3_BUCKET_TEMPORARY = os.environ.get("S3_BUCKET_TEMPORARY")
+S3_BUCKET = os.environ.get("S3_BUCKET")
 
 def init_s3_bucket(env, bucket):
     if env == "production":
@@ -29,7 +29,7 @@ def init_s3_bucket(env, bucket):
     return s3_client, region
 
 
-s3, S3_REGION = init_s3_bucket(bucket=S3_BUCKET_TEMPORARY, env=ENV)
+s3, S3_REGION = init_s3_bucket(bucket=S3_BUCKET, env=ENV)
 
 
 def transform():
@@ -59,9 +59,9 @@ def transform_byte_to_object(byte_data):
 
 
 def get_s3_location(key):
-    return f'https://s3-{S3_REGION}.amazonaws.com/{S3_BUCKET_TEMPORARY}/{key}'
+    return f'https://s3-{S3_REGION}.amazonaws.com/{S3_BUCKET}/{key}'
 
 
 def save_image_to_s3(binary_data, key):
-    s3.put_object(Body=binary_data, Bucket=S3_BUCKET_TEMPORARY, Key=key)
+    s3.put_object(Body=binary_data, Bucket=S3_BUCKET, Key=key)
     return get_s3_location(key)

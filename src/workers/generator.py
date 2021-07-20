@@ -14,8 +14,9 @@ class GeneratorWorker:
                  main_server_endpoint):
         self.device = "cpu"
         self.main_server_endpoint = main_server_endpoint
-        self.connection = pika.BlockingConnection(pika.URLParameters(queue_host))
-        self.channel = self.connection.channel()
+        self.queue_host = queue_host
+        self.connection = None
+        self.channel = None
         self.weights = {}
         for style_id, snapshot_path in snapshots.items():
             self.update_weight(style_id=style_id, snapshot_path=snapshot_path)
@@ -88,6 +89,26 @@ class GeneratorWorker:
         self.channel.basic_consume(queue=queue_name, on_message_callback=self.handle_update_weight)
 
     def start_task(self):
-        self.init_transfer_photo_queue()
-        self.init_update_weight_queue()
-        self.channel.start_consuming()
+        i = 0
+        while True:
+            try:
+                print("Connecting...")
+                self.connection = pika.BlockingConnection(pika.URLParameters(self.queue_host))
+                self.channel = self.connection.channel()
+                self.init_transfer_photo_queue()
+                self.init_update_weight_queue()
+                self.channel.basic_qos(prefetch_count=1)
+                self.channel.start_consuming()
+            except KeyboardInterrupt:
+                self.channel.stop_consuming()
+                self.connection.close()
+                break
+            except pika.exceptions.ConnectionClosedByBroker:
+                continue
+            except pika.exceptions.AMQPChannelError as err:
+                print(err)
+                continue
+            except pika.exceptions.AMQPConnectionError as err:
+                print(err)
+                print("Connection was closed, retrying...")
+                break;
