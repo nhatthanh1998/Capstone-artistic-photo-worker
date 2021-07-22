@@ -6,7 +6,7 @@ from src.utils.utils import transform, transform_byte_to_object, save_image_to_s
 import uuid
 import pika
 from datetime import datetime
-
+import sys
 
 class GeneratorWorker:
     def __init__(self, queue_host,
@@ -59,19 +59,19 @@ class GeneratorWorker:
         userId = data['userId']
         accessURL = data['accessURL']
         date_time = datetime.now().strftime("%m-%d-%Y")
-        image_name = f"{date_time}/{uuid.uuid4()}.jpg"
+        image_name = f"transfer-image/{date_time}/{uuid.uuid4()}.jpg"
         # Put data to model process pipeline
         self.handler(ch=ch, method=method, photo_access_url=accessURL, userId=userId, image_name=image_name,
                      style_id=style_id)
-        print("Transfer done")
+        sys.stdout.write("Transfer photo completed!")
 
     def handle_update_weight(self, ch, method, properties, body):
-        print("Start update weight library...")
+        sys.stdout.write("Start update weight's library...")
         body = transform_byte_to_object(body)
         style_id = body['styleId']
         snapshot_path = body['snapshotPath']
         self.update_weight(style_id=style_id, snapshot_path=snapshot_path)
-        print("Update weights completed")
+        sys.stdout.write("Update weights completed")
         
 
     def init_transfer_photo_queue(self):
@@ -79,7 +79,7 @@ class GeneratorWorker:
         self.channel.exchange_declare("TRANSFER_PHOTO_EXCHANGE", exchange_type='direct')
         self.channel.queue_bind(exchange="TRANSFER_PHOTO_EXCHANGE", queue="TRANSFER_PHOTO_QUEUE", routing_key="")
         self.channel.basic_consume(queue="TRANSFER_PHOTO_QUEUE", on_message_callback=self.process_transfer_photo_task)
-        print(f' [*] Waiting for messages at TRANSFER PHOTO EXCHANGE. To exit press CTRL+C')
+        sys.stdout.write(f' [*] Waiting for messages at TRANSFER PHOTO EXCHANGE...')
 
     def init_update_weight_queue(self):
         rs = self.channel.queue_declare(queue='', exclusive=True)
@@ -92,7 +92,7 @@ class GeneratorWorker:
         i = 0
         while True:
             try:
-                print("Connecting...")
+                sys.stdout.write("Connecting...")
                 self.connection = pika.BlockingConnection(pika.URLParameters(self.queue_host))
                 self.channel = self.connection.channel()
                 self.init_transfer_photo_queue()
@@ -106,9 +106,9 @@ class GeneratorWorker:
             except pika.exceptions.ConnectionClosedByBroker:
                 continue
             except pika.exceptions.AMQPChannelError as err:
-                print(err)
+                sys.stdout.write(err)
                 continue
             except pika.exceptions.AMQPConnectionError as err:
-                print(err)
-                print("Connection was closed, retrying...")
+                sys.stdout.write(err)
+                sys.stdout.write("Connection was closed, retrying...")
                 break;
