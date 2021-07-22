@@ -10,7 +10,7 @@ from PIL import Image
 
 load_dotenv()
 ENV = os.environ.get("ENV", "dev")
-S3_BUCKET = os.environ.get("S3_BUCKET")
+S3_BUCKET = "artisan-photos"
 
 def init_s3_bucket(env, bucket):
     if env == "production":

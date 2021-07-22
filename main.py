@@ -8,8 +8,8 @@ import json
 
 
 QUEUE_HOST='amqps://nhatthanhlolo1:nhatthanh123@b-bb75efcd-b132-429f-9d91-9a062463a388.mq.ap-southeast-1.amazonaws.com:5671'
-# MAIN_SERVER='http://backendserverloadbalancer-1655295085.ap-southeast-1.elb.amazonaws.com'
-MAIN_SERVER="http://localhost:3001"
+MAIN_SERVER='http://backendserverloadbalancer-1655295085.ap-southeast-1.elb.amazonaws.com'
+# MAIN_SERVER='http://192.168.1.26:3001'
 
 if __name__ == '__main__':
     try:
